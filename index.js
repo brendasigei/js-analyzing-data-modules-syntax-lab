@@ -1,65 +1,98 @@
+// Select DOM elements
+const stateInput = document.getElementById("state-input");
+const fetchButton = document.getElementById("fetch-alerts");
+const alertsDisplay = document.getElementById("alerts-display");
+const errorMessage = document.getElementById("error-message");
+const loading = document.getElementById("loading");
 
+// Fetch weather alerts for a state from the National Weather Service API
+function fetchWeatherAlerts(state) {
+  showLoading();
 
+  return fetch(`https://api.weather.gov/alerts/active?area=${state}`)
+    .then((response) => {
+      // Only treat the response as failed when ok is explicitly false
+      if (response.ok === false) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log(data);
+      clearError();
+      displayAlerts(data);
+      return data;
+    })
+    .catch((error) => {
+      console.log(error.message);
+      alertsDisplay.innerHTML = "";
+      showError(error.message);
+    })
+    .finally(() => {
+      hideLoading();
+    });
+}
 
-module.exports = {
-  ...(typeof combineUsers !== 'undefined' && { combineUsers })
-};// Step 5: datejs goes outside the function
-require('datejs');
+// Update the DOM with the summary and the list of headlines
+function displayAlerts(data) {
+  alertsDisplay.innerHTML = "";
 
-// Step 1: function with a rest argument
-function combineUsers(...args) {
-  // Step 2: initialize the return object
-  const combinedObject = {
-    users: []
-  };
+  const summary = document.createElement("p");
+  summary.textContent = `${data.title}: ${data.features.length}`;
+  alertsDisplay.appendChild(summary);
 
-  // Step 3: loop through args to isolate each array
-  for (const arr of args) {
-    // Step 4: merge with the spread operator
-    combinedObject.users = [...combinedObject.users, ...arr];
+  const list = document.createElement("ul");
+  data.features.forEach((alert) => {
+    const item = document.createElement("li");
+    item.textContent = alert.properties.headline;
+    list.appendChild(item);
+  });
+  alertsDisplay.appendChild(list);
+}
+
+// Error helpers
+function showError(message) {
+  errorMessage.textContent = message;
+  errorMessage.classList.add("error");
+  errorMessage.classList.remove("hidden");
+}
+
+function clearError() {
+  errorMessage.textContent = "";
+  errorMessage.classList.remove("error");
+  errorMessage.classList.add("hidden");
+}
+
+// Loading helpers
+function showLoading() {
+  if (loading) loading.classList.remove("hidden");
+}
+
+function hideLoading() {
+  if (loading) loading.classList.add("hidden");
+}
+
+// Input validation: exactly two capital letters
+function isValidState(state) {
+  return /^[A-Z]{2}$/.test(state);
+}
+
+// Handle the button click
+fetchButton.addEventListener("click", () => {
+  const state = stateInput.value.trim().toUpperCase();
+
+  // Clear the input field after reading it
+  stateInput.value = "";
+
+  if (!state) {
+    showError("Please enter a state abbreviation.");
+    return;
   }
 
-  // Step 5: add today's date in the M/d/yyyy format
-  combinedObject.merge_date = new Date().toString("M/d/yyyy");
+  if (!isValidState(state)) {
+    showError("Invalid input. Please enter exactly two letters (e.g. CA).");
+    return;
+  }
 
-  // Step 7: return the object
-  return combinedObject;
-}
-
-// Example
-console.log(combineUsers(["alice", "bob"], ["carol", "dave"], ["erin"]));
-// { users: ["alice", "bob", "carol", "dave", "erin"], merge_date: "10/24/2026" }
-
-module.exports = combineUsers;
-
-/**
- * Merges any number of username arrays and records the merge date.
- * @param {...string[]} args - Arrays of usernames.
- * @returns {{ users: string[], merge_date: string }} Combined users and date.
- */
-function combineUsers(...args) {
-  // ...
-}
-
-require("datejs");
-const combineUsers = require("./index"); // use { combineUsers } if you export with curly braces
-
-describe("combineUsers", () => {
-  test("merges multiple arrays into the users key", () => {
-    const result = combineUsers(["alice", "bob"], ["carol"], ["dave", "erin"]);
-    expect(result.users).toEqual(["alice", "bob", "carol", "dave", "erin"]);
-  });
-
-  test("works with a single array", () => {
-    expect(combineUsers(["alice"]).users).toEqual(["alice"]);
-  });
-
-  test("works with no arrays", () => {
-    expect(combineUsers().users).toEqual([]);
-  });
-
-  test("adds merge_date in M/d/yyyy format", () => {
-    const result = combineUsers(["alice"]);
-    expect(result.merge_date).toBe(new Date().toString("M/d/yyyy"));
-    expect(result.merge_date).toMatch(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
-  });
+  fetchWeatherAlerts(state);
+});

@@ -1,15 +1,4 @@
-{
-  "scripts": {
-    "lint": "eslint .",
-    "test": "jest"
-  },
-  "devDependencies": {
-    "jest": "^30.5.2"
-  },
-  "dependencies": {
-    "datejs": "^1.0.0-rc3"
-  }
-}
+
 {
   "name": "js-merge-users-lab",
   "version": "1.0.0",

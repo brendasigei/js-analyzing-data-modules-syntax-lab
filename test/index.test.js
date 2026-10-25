@@ -1,5 +1,5 @@
 
-const combineUsers = require("./index");
+const combineUsers = require("../index");
 
 describe("combineUsers", () => {
   test("merges multiple arrays of usernames", () => {
